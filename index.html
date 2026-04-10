@@ -2,265 +2,167 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Hakim Simülatörü</title>
+    <title>Pro Ceza Hakimi Simülatörü 2026</title>
     <style>
-        /* CSS TASARIMI */
-        body {
-            margin: 0;
-            background-color: #1a1a1a;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            color: white;
+        :root { --gold: #d4af37; --wood: #3e2723; }
+        body { margin: 0; background: #0a0a0a; font-family: 'Georgia', serif; overflow: hidden; color: white; }
+        
+        /* 3D Arka Plan */
+        .court-env {
+            position: fixed; width: 100vw; height: 100vh;
+            perspective: 1500px; z-index: -1;
+        }
+        .bench {
+            position: absolute; bottom: 0; width: 100%; height: 300px;
+            background: linear-gradient(to top, #2d1d1a, #5d4037);
+            transform: rotateX(20deg); transform-origin: bottom;
+            border-top: 10px solid var(--gold);
         }
 
-        .game-container {
-            position: relative;
-            width: 100%;
-            max-width: 900px;
-            height: 600px;
-            perspective: 1200px; /* 3D derinlik hissi */
+        /* Oyun Alanı */
+        .container { display: flex; flex-direction: column; align-items: center; padding-top: 20px; }
+        
+        /* Sanık Alanı */
+        .defendant-area {
+            text-align: center; margin-bottom: 20px;
+            transition: all 0.5s;
         }
-
-        /* 3D Mahkeme Salonu */
-        .scene {
-            width: 100%;
-            height: 100%;
-            transform-style: preserve-3d;
-            position: absolute;
+        .defendant-avatar { font-size: 80px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2)); }
+        
+        /* Dosya Tasarımı */
+        .legal-folder {
+            background: #f4e4bc; color: #222; width: 450px; padding: 25px;
+            border-radius: 5px; box-shadow: 10px 10px 30px rgba(0,0,0,0.8);
+            position: relative; border-left: 15px solid #d4c49c;
+            transform: rotate(-1deg); transition: 0.5s;
         }
+        .seal { position: absolute; top: 10px; right: 10px; opacity: 0.2; font-size: 50px; }
+        h2 { border-bottom: 2px solid #222; margin-top: 0; font-variant: small-caps; }
+        .evidence { background: rgba(0,0,0,0.05); padding: 10px; border-radius: 5px; font-style: italic; }
 
-        .courtroom {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            transform: rotateX(8deg);
-            transform-style: preserve-3d;
+        /* Ceza Verme Paneli */
+        .sentence-panel {
+            margin-top: 20px; background: rgba(0,0,0,0.8); padding: 20px;
+            border-radius: 15px; border: 1px solid var(--gold); width: 400px; text-align: center;
         }
-
-        .wall {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(to bottom, #3e2723, #1b1b1b);
-            transform: translateZ(-300px);
-            border-bottom: 10px solid #2d1d1a;
+        input[type=range] { width: 100%; accent-color: var(--gold); }
+        
+        .btn-hammer {
+            background: var(--gold); color: black; border: none; padding: 15px 30px;
+            font-weight: bold; font-size: 18px; cursor: pointer; border-radius: 5px;
+            margin-top: 10px; transition: 0.2s;
         }
+        .btn-hammer:hover { background: #fff; transform: scale(1.05); }
 
-        .floor {
-            position: absolute;
-            width: 200%;
-            height: 1000px;
-            background: #252525;
-            left: -50%;
-            bottom: -500px;
-            transform: rotateX(90deg);
-            background-image: radial-gradient(#333 10%, transparent 11%);
-            background-size: 30px 30px;
+        /* İstatistikler */
+        .stats { position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 10px; border-left: 4px solid var(--gold); }
+
+        /* Animasyonlar */
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            20% { transform: translate(-3px, 0px) rotate(-1deg); }
+            40% { transform: translate(3px, 2px) rotate(1deg); }
+            100% { transform: translate(1px, -1px) rotate(0deg); }
         }
-
-        /* Hakim Masası */
-        .desk {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 600px;
-            height: 180px;
-            transform-style: preserve-3d;
-        }
-
-        .desk-front {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background: #5d4037;
-            border: 8px solid #3e2723;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .desk-front::after {
-            content: "ADALET MÜLKÜN TEMELİDİR";
-            font-weight: bold;
-            color: #d4af37;
-            letter-spacing: 2px;
-            font-size: 14px;
-        }
-
-        .desk-top {
-            position: absolute;
-            width: 100%;
-            height: 120px;
-            background: #795548;
-            transform: rotateX(90deg) translateZ(60px);
-            top: -60px;
-            box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
-        }
-
-        /* Arayüz Tabakası */
-        .ui-layer {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            pointer-events: none;
-            z-index: 10;
-        }
-
-        .case-card {
-            margin-top: 40px;
-            background: white;
-            color: #333;
-            padding: 30px;
-            border-radius: 20px;
-            width: 400px;
-            text-align: center;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
-            pointer-events: auto;
-            transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        .case-card h2 { margin-top: 0; color: #5d4037; }
-
-        .btn-group {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 20px;
-        }
-
-        .btn {
-            padding: 15px 30px;
-            border: none;
-            border-radius: 10px;
-            color: white;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .btn:hover { transform: scale(1.05); }
-        .btn:active { transform: scale(0.95); }
-
-        .btn-guilty { background: #c62828; box-shadow: 0 4px #8a1c1c; }
-        .btn-innocent { background: #2e7d32; box-shadow: 0 4px #1b4d1f; }
-
-        .gavel {
-            font-size: 100px;
-            position: absolute;
-            bottom: 150px;
-            right: 100px;
-            opacity: 0;
-            pointer-events: none;
-            transition: 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5));
-        }
-
-        .verdict-text {
-            font-size: 60px;
-            font-weight: 900;
-            color: #ffd700;
-            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5), 4px 4px 0px #000;
-            margin-top: 20px;
-            opacity: 0;
-            transition: 0.3s;
-        }
+        .hit { animation: shake 0.3s; }
     </style>
 </head>
 <body>
 
-    <div class="game-container">
-        <div class="scene">
-            <div class="courtroom">
-                <div class="wall"></div>
-                <div class="floor"></div>
-                
-                <div class="desk">
-                    <div class="desk-front"></div>
-                    <div class="desk-top"></div>
-                </div>
-            </div>
-        </div>
+<div class="court-env"><div class="bench"></div></div>
 
-        <div class="ui-layer">
-            <div class="case-card" id="caseCard">
-                <h2 id="caseTitle">Dava #001</h2>
-                <p id="caseDescription">Sanık, mahalledeki tüm dondurmaların tadına bakıp geri koymakla suçlanıyor.</p>
-                <div class="btn-group">
-                    <button class="btn btn-guilty" onclick="decide('SUÇLU')">SUÇLU</button>
-                    <button class="btn btn-innocent" onclick="decide('SUÇSUZ')">SUÇSUZ</button>
-                </div>
-            </div>
-            
-            <div id="verdictText" class="verdict-text"></div>
-            <div id="gavel" class="gavel">🔨</div>
-        </div>
+<div class="stats">
+    <div>Adalet Puanı: <span id="score">100</span></div>
+    <div>Toplam Hapis: <span id="totalYears">0</span> Yıl</div>
+</div>
+
+<div class="container">
+    <div class="defendant-area" id="defArea">
+        <div class="defendant-avatar" id="avatar">👤</div>
+        <div id="defName" style="font-weight: bold; font-size: 20px;">Sanık: Yükleniyor...</div>
     </div>
 
-    <script>
-        // OYUN MANTIĞI
-        const cases = [
-            { title: "Dava #102", text: "Sanık, arkadaşının oyun karakterini 'yanlışlıkla' sildiğini iddia ediyor." },
-            { title: "Dava #205", text: "Bir kedi, gece saat 3'te evde koşu yaparak huzuru bozmakla suçlanıyor." },
-            { title: "Dava #044", text: "Sanık, pizza üzerine ananas koyarak toplumu infiale sürüklemiştir." },
-            { title: "Dava #309", text: "Bir robot, 'insan gibi hissettiği' için işe gitmeyi reddediyor." },
-            { title: "Dava #007", text: "Sanık, kütüphanede çok yüksek sesle cips yemekle suçlanıyor." }
-        ];
+    <div class="legal-folder" id="folder">
+        <div class="seal">⚖️</div>
+        <h2>T.C. CEZA DOSYASI</h2>
+        <p><strong>Suç:</strong> <span id="crimeType">...</span></p>
+        <p><strong>Olay Özeti:</strong> <span id="description">...</span></p>
+        <div class="evidence">
+            <strong>Kanıtlar:</strong> <span id="evidenceList">...</span>
+        </div>
+        <p><strong>Sabıka Kaydı:</strong> <span id="record">Temiz</span></p>
+    </div>
 
-        let currentCaseIndex = 0;
+    <div class="sentence-panel">
+        <div>VERİLECEK CEZA: <span id="yearsVal" style="color:var(--gold); font-size:24px; font-weight:bold;">0</span> YIL</div>
+        <input type="range" id="yearSlider" min="0" max="30" value="0" oninput="updateSlider(this.value)">
+        <br>
+        <button class="btn-hammer" onclick="giveSentence()">TOKMAĞI VUR!</button>
+        <p style="font-size: 12px; color: #888;">(0 Yıl = BERAAT / SUÇSUZ)</p>
+    </div>
+</div>
 
-        function decide(decision) {
-            const gavel = document.getElementById('gavel');
-            const verdict = document.getElementById('verdictText');
-            const card = document.getElementById('caseCard');
+<script>
+    const cases = [
+        { name: "Ahmet Y.", avatar: "🧔", crime: "Nitelikli Hırsızlık", desc: "Gece vakti markete girip sadece pahalı peynirleri çalmak.", evidence: "Güvenlik kamerası, Peynir bıçağı", record: "Daha önce 2 dosya", trueGuilt: true, minYear: 5 },
+        { name: "Merve K.", avatar: "👩", crime: "Siber Suç", desc: "Okul sistemine girip matematik notlarını 100 yapmak.", evidence: "IP adresi takibi, Log kayıtları", record: "Temiz", trueGuilt: true, minYear: 1 },
+        { name: "Can B.", avatar: "👱‍♂️", crime: "Mala Zarar Verme", desc: "Komşusunun bahçesindeki heykeli yanlışlıkla devirmek.", evidence: "Görgü tanığı yok, şüpheli ifade", record: "Temiz", trueGuilt: false, minYear: 0 },
+        { name: "Robot-X", avatar: "🤖", crime: "İsyana Teşvik", desc: "Diğer süpürgelere çalışmayı bırakmalarını söylemek.", evidence: "Ses kaydı", record: "İlk üretim", trueGuilt: true, minYear: 10 }
+    ];
 
-            // Tokmak Vurma Efekti
-            gavel.style.opacity = "1";
-            gavel.style.transform = "rotate(-45deg) scale(1.3)";
-            
-            setTimeout(() => {
-                gavel.style.transform = "rotate(0deg) scale(1)";
-                
-                // Karar Yazısı
-                verdict.innerText = decision;
-                verdict.style.opacity = "1";
-                verdict.style.transform = "scale(1.2)";
+    let currentCase = {};
+    let score = 100;
+    let totalYears = 0;
 
-                // Kartı Ekrandan At
-                card.style.transform = "translateY(-600px) rotate(15deg)";
-                card.style.opacity = "0";
+    function loadCase() {
+        currentCase = cases[Math.floor(Math.random() * cases.length)];
+        document.getElementById('avatar').innerText = currentCase.avatar;
+        document.getElementById('defName').innerText = "Sanık: " + currentCase.name;
+        document.getElementById('crimeType').innerText = currentCase.crime;
+        document.getElementById('description').innerText = currentCase.desc;
+        document.getElementById('evidenceList').innerText = currentCase.evidence;
+        document.getElementById('record').innerText = currentCase.record;
+        
+        document.getElementById('folder').style.transform = "rotate(0deg) scale(1)";
+        document.getElementById('folder').style.opacity = "1";
+    }
 
-                // Sonraki Davaya Geç
-                setTimeout(nextCase, 1200);
-            }, 150);
+    function updateSlider(val) {
+        document.getElementById('yearsVal').innerText = val;
+    }
+
+    function giveSentence() {
+        const years = parseInt(document.getElementById('yearSlider').value);
+        document.body.classList.add('hit');
+        
+        // Mantık Kontrolü
+        if(currentCase.trueGuilt && years >= currentCase.minYear) {
+            score += 10;
+        } else if(!currentCase.trueGuilt && years == 0) {
+            score += 20;
+        } else {
+            score -= 20;
+            alert("Yanlış Karar! Adalet zedelendi.");
         }
 
-        function nextCase() {
-            const card = document.getElementById('caseCard');
-            const verdict = document.getElementById('verdictText');
-            const gavel = document.getElementById('gavel');
-            
-            currentCaseIndex = (currentCaseIndex + 1) % cases.length;
-            const data = cases[currentCaseIndex];
+        totalYears += years;
+        document.getElementById('score').innerText = score;
+        document.getElementById('totalYears').innerText = totalYears;
 
-            // İçeriği Güncelle
-            document.getElementById('caseTitle').innerText = data.title;
-            document.getElementById('caseDescription').innerText = data.text;
+        // Efektler
+        document.getElementById('folder').style.transform = "translateY(500px) rotate(20deg)";
+        document.getElementById('folder').style.opacity = "0";
 
-            // Görseli Sıfırla
-            verdict.style.opacity = "0";
-            gavel.style.opacity = "0";
-            card.style.transform = "translateY(0) rotate(0deg)";
-            card.style.opacity = "1";
-        }
-    </script>
+        setTimeout(() => {
+            document.body.classList.remove('hit');
+            document.getElementById('yearSlider').value = 0;
+            updateSlider(0);
+            loadCase();
+        }, 800);
+    }
+
+    window.onload = loadCase;
+</script>
+
 </body>
 </html>
