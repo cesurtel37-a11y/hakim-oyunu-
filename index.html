@@ -2,166 +2,185 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Pro Ceza Hakimi Simülatörü 2026</title>
+    <title>ADALET SARAYI - Hakim Simülatörü 2.0</title>
     <style>
-        :root { --gold: #d4af37; --wood: #3e2723; }
-        body { margin: 0; background: #0a0a0a; font-family: 'Georgia', serif; overflow: hidden; color: white; }
-        
-        /* 3D Arka Plan */
-        .court-env {
-            position: fixed; width: 100vw; height: 100vh;
-            perspective: 1500px; z-index: -1;
-        }
-        .bench {
-            position: absolute; bottom: 0; width: 100%; height: 300px;
-            background: linear-gradient(to top, #2d1d1a, #5d4037);
-            transform: rotateX(20deg); transform-origin: bottom;
-            border-top: 10px solid var(--gold);
-        }
+        :root { --gold: #ffd700; --red: #ff4d4d; --green: #2ecc71; --paper: #f0e68c; }
+        body { margin: 0; background: #121212; font-family: 'Times New Roman', serif; color: white; overflow: hidden; }
 
-        /* Oyun Alanı */
-        .container { display: flex; flex-direction: column; align-items: center; padding-top: 20px; }
-        
-        /* Sanık Alanı */
-        .defendant-area {
-            text-align: center; margin-bottom: 20px;
-            transition: all 0.5s;
-        }
-        .defendant-avatar { font-size: 80px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2)); }
-        
-        /* Dosya Tasarımı */
-        .legal-folder {
-            background: #f4e4bc; color: #222; width: 450px; padding: 25px;
-            border-radius: 5px; box-shadow: 10px 10px 30px rgba(0,0,0,0.8);
-            position: relative; border-left: 15px solid #d4c49c;
-            transform: rotate(-1deg); transition: 0.5s;
-        }
-        .seal { position: absolute; top: 10px; right: 10px; opacity: 0.2; font-size: 50px; }
-        h2 { border-bottom: 2px solid #222; margin-top: 0; font-variant: small-caps; }
-        .evidence { background: rgba(0,0,0,0.05); padding: 10px; border-radius: 5px; font-style: italic; }
+        /* Üst Panel - Kariyer & Haberler */
+        .top-bar { display: flex; justify-content: space-between; padding: 10px 20px; background: #000; border-bottom: 2px solid var(--gold); }
+        .news-ticker { position: fixed; bottom: 0; width: 100%; background: #c0392b; color: white; padding: 5px; font-weight: bold; font-family: sans-serif; }
 
-        /* Ceza Verme Paneli */
-        .sentence-panel {
-            margin-top: 20px; background: rgba(0,0,0,0.8); padding: 20px;
-            border-radius: 15px; border: 1px solid var(--gold); width: 400px; text-align: center;
-        }
-        input[type=range] { width: 100%; accent-color: var(--gold); }
+        /* Mahkeme Ortamı */
+        .court-room { display: flex; flex-direction: column; align-items: center; height: 100vh; padding-top: 40px; }
         
-        .btn-hammer {
-            background: var(--gold); color: black; border: none; padding: 15px 30px;
-            font-weight: bold; font-size: 18px; cursor: pointer; border-radius: 5px;
-            margin-top: 10px; transition: 0.2s;
-        }
-        .btn-hammer:hover { background: #fff; transform: scale(1.05); }
+        /* Sanık ve Duygular */
+        .defendant-container { text-align: center; margin-bottom: 20px; }
+        #defendant-emoji { font-size: 100px; display: block; transition: 0.5s; }
+        #reaction-bubble { background: white; color: black; padding: 5px 10px; border-radius: 10px; opacity: 0; font-weight: bold; }
 
-        /* İstatistikler */
-        .stats { position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 10px; border-left: 4px solid var(--gold); }
+        /* Dosya ve Kanıtlar */
+        .legal-case {
+            background: var(--paper); color: #2c3e50; width: 500px; min-height: 400px;
+            padding: 30px; border-radius: 2px; box-shadow: 15px 15px 0px rgba(0,0,0,0.5);
+            position: relative; transition: 0.8s transform cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            border: 1px solid #d4c49c;
+        }
+        .stamp { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); 
+                 font-size: 80px; font-weight: bold; border: 8px solid; padding: 10px; opacity: 0; pointer-events: none; }
+
+        .evidence-tag { background: #e74c3c; color: white; padding: 2px 8px; font-size: 12px; border-radius: 3px; }
+        .polygraph { font-family: monospace; color: #16a085; font-weight: bold; }
+
+        /* Hakim Paneli */
+        .judge-controls {
+            margin-top: 20px; background: #2c3e50; padding: 20px; border-radius: 10px;
+            border: 3px solid var(--gold); width: 500px; text-align: center;
+        }
+        .slider { width: 100%; height: 15px; background: #34495e; outline: none; -webkit-appearance: none; margin: 15px 0; }
+        .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 25px; height: 25px; background: var(--gold); cursor: pointer; border-radius: 50%; }
+
+        .btn-group { display: flex; gap: 10px; justify-content: center; }
+        button { cursor: pointer; font-weight: bold; transition: 0.2s; border: none; padding: 10px 20px; border-radius: 5px; }
+        .btn-sentence { background: var(--gold); color: black; }
+        .btn-life { background: #000; color: white; border: 1px solid var(--gold); }
+        .btn-bribe { background: #8e44ad; color: white; font-size: 10px; }
 
         /* Animasyonlar */
-        @keyframes shake {
-            0% { transform: translate(1px, 1px) rotate(0deg); }
-            20% { transform: translate(-3px, 0px) rotate(-1deg); }
-            40% { transform: translate(3px, 2px) rotate(1deg); }
-            100% { transform: translate(1px, -1px) rotate(0deg); }
-        }
-        .hit { animation: shake 0.3s; }
+        @keyframes hammer-hit { 0% { transform: scale(1); } 50% { transform: scale(0.95); filter: brightness(1.5); } 100% { transform: scale(1); } }
+        .hit-effect { animation: hammer-hit 0.2s; }
     </style>
 </head>
 <body>
 
-<div class="court-env"><div class="bench"></div></div>
-
-<div class="stats">
-    <div>Adalet Puanı: <span id="score">100</span></div>
-    <div>Toplam Hapis: <span id="totalYears">0</span> Yıl</div>
+<div class="top-bar">
+    <div>🎓 Rütbe: <span id="rank">Stajyer Hakim</span></div>
+    <div>⚖️ İtibar: <span id="reputation">50</span>%</div>
+    <div>💰 Kasa: <span id="money">0</span>₺</div>
 </div>
 
-<div class="container">
-    <div class="defendant-area" id="defArea">
-        <div class="defendant-avatar" id="avatar">👤</div>
-        <div id="defName" style="font-weight: bold; font-size: 20px;">Sanık: Yükleniyor...</div>
+<div class="court-room">
+    <div class="defendant-container">
+        <div id="reaction-bubble">ADALET!</div>
+        <span id="defendant-emoji">😐</span>
+        <h3 id="defendant-name">Sanık Yükleniyor...</h3>
     </div>
 
-    <div class="legal-folder" id="folder">
-        <div class="seal">⚖️</div>
-        <h2>T.C. CEZA DOSYASI</h2>
-        <p><strong>Suç:</strong> <span id="crimeType">...</span></p>
-        <p><strong>Olay Özeti:</strong> <span id="description">...</span></p>
-        <div class="evidence">
-            <strong>Kanıtlar:</strong> <span id="evidenceList">...</span>
+    <div class="legal-case" id="case-folder">
+        <div id="stamp-box" class="stamp"></div>
+        <small id="case-id">DOSYA NO: 2026/001</small>
+        <h2 style="text-align: center; text-decoration: underline;">AĞIR CEZA MAHKEMESİ</h2>
+        
+        <p><strong>SUÇ:</strong> <span id="crime-title">...</span></p>
+        <p><strong>SAVCI GÖRÜŞÜ:</strong> <span id="prosecutor-note" style="color: #c0392b;">...</span></p>
+        <p><strong>AVUKAT SAVUNMASI:</strong> <span id="lawyer-note" style="color: #2980b9;">...</span></p>
+        <p><strong>YALAN MAKİNESİ:</strong> <span class="polygraph" id="poly-result">%?</span></p>
+        
+        <div style="border: 1px dashed #333; padding: 10px; margin: 10px 0;">
+            <strong>KANIT DOSYASI:</strong><br>
+            <span id="evidence-text">...</span>
         </div>
-        <p><strong>Sabıka Kaydı:</strong> <span id="record">Temiz</span></p>
+        <div id="bribe-offer" style="display:none; color: #8e44ad; font-weight: bold;">⚠️ GİZLİ TEKLİF: "Dosyayı kapatırsan 50.000₺ senin."</div>
     </div>
 
-    <div class="sentence-panel">
-        <div>VERİLECEK CEZA: <span id="yearsVal" style="color:var(--gold); font-size:24px; font-weight:bold;">0</span> YIL</div>
-        <input type="range" id="yearSlider" min="0" max="30" value="0" oninput="updateSlider(this.value)">
-        <br>
-        <button class="btn-hammer" onclick="giveSentence()">TOKMAĞI VUR!</button>
-        <p style="font-size: 12px; color: #888;">(0 Yıl = BERAAT / SUÇSUZ)</p>
+    <div class="judge-controls">
+        <div>HÜKÜM: <span id="years-display" style="font-size: 24px; color: var(--gold);">0</span> YIL HAPİS</div>
+        <input type="range" min="0" max="100" value="0" class="slider" id="sentence-slider">
+        
+        <div class="btn-group">
+            <button class="btn-sentence" onclick="finalize(false)">TOKMAĞI VUR (GEREKÇELİ)</button>
+            <button class="btn-life" onclick="finalize(true)">MÜEBBET HAPİS</button>
+            <button class="btn-bribe" id="bribe-btn" style="display:none;" onclick="takeBribe()">RÜŞVETİ AL</button>
+        </div>
     </div>
 </div>
+
+<div class="news-ticker" id="ticker">SON DAKİKA: Yargı yılı bugün törenle başladı...</div>
 
 <script>
     const cases = [
-        { name: "Ahmet Y.", avatar: "🧔", crime: "Nitelikli Hırsızlık", desc: "Gece vakti markete girip sadece pahalı peynirleri çalmak.", evidence: "Güvenlik kamerası, Peynir bıçağı", record: "Daha önce 2 dosya", trueGuilt: true, minYear: 5 },
-        { name: "Merve K.", avatar: "👩", crime: "Siber Suç", desc: "Okul sistemine girip matematik notlarını 100 yapmak.", evidence: "IP adresi takibi, Log kayıtları", record: "Temiz", trueGuilt: true, minYear: 1 },
-        { name: "Can B.", avatar: "👱‍♂️", crime: "Mala Zarar Verme", desc: "Komşusunun bahçesindeki heykeli yanlışlıkla devirmek.", evidence: "Görgü tanığı yok, şüpheli ifade", record: "Temiz", trueGuilt: false, minYear: 0 },
-        { name: "Robot-X", avatar: "🤖", crime: "İsyana Teşvik", desc: "Diğer süpürgelere çalışmayı bırakmalarını söylemek.", evidence: "Ses kaydı", record: "İlk üretim", trueGuilt: true, minYear: 10 }
+        { name: "Murtaza K.", emoji: "🧔", crime: "Pizza Hırsızlığı", prosecutor: "En ağır cezayı almalı!", lawyer: "Müvekkilim açtı.", poly: 85, evidence: "Peynir izleri, 44 numara ayak izi", guilty: true, min: 2, bribe: false },
+        { name: "Ayşe S.", emoji: "👩‍🦳", crime: "Trafik İhlali", prosecutor: "Ehliyeti alınmalı.", lawyer: "Acil hastası vardı.", poly: 95, evidence: "Radar görüntüleri", guilty: false, min: 0, bribe: true },
+        { name: "Gölge", emoji: "👤", crime: "Siber Saldırı", prosecutor: "Ülke güvenliğini bozdu.", lawyer: "Kanıtlar yetersiz.", poly: 10, evidence: "Kriptolu diskler", guilty: true, min: 20, bribe: true }
     ];
 
-    let currentCase = {};
-    let score = 100;
-    let totalYears = 0;
+    let current = {};
+    let stats = { rep: 50, money: 0, cases: 0 };
 
-    function loadCase() {
-        currentCase = cases[Math.floor(Math.random() * cases.length)];
-        document.getElementById('avatar').innerText = currentCase.avatar;
-        document.getElementById('defName').innerText = "Sanık: " + currentCase.name;
-        document.getElementById('crimeType').innerText = currentCase.crime;
-        document.getElementById('description').innerText = currentCase.desc;
-        document.getElementById('evidenceList').innerText = currentCase.evidence;
-        document.getElementById('record').innerText = currentCase.record;
+    function loadNewCase() {
+        current = cases[Math.floor(Math.random() * cases.length)];
+        document.getElementById('defendant-name').innerText = current.name;
+        document.getElementById('defendant-emoji').innerText = current.emoji;
+        document.getElementById('crime-title').innerText = current.crime;
+        document.getElementById('prosecutor-note').innerText = current.prosecutor;
+        document.getElementById('lawyer-note').innerText = current.lawyer;
+        document.getElementById('poly-result').innerText = "%" + current.poly + " TUTARLI";
+        document.getElementById('evidence-text').innerText = current.evidence;
+        document.getElementById('case-id').innerText = "DOSYA NO: 2026/" + Math.floor(Math.random()*1000);
         
-        document.getElementById('folder').style.transform = "rotate(0deg) scale(1)";
-        document.getElementById('folder').style.opacity = "1";
-    }
-
-    function updateSlider(val) {
-        document.getElementById('yearsVal').innerText = val;
-    }
-
-    function giveSentence() {
-        const years = parseInt(document.getElementById('yearSlider').value);
-        document.body.classList.add('hit');
-        
-        // Mantık Kontrolü
-        if(currentCase.trueGuilt && years >= currentCase.minYear) {
-            score += 10;
-        } else if(!currentCase.trueGuilt && years == 0) {
-            score += 20;
+        // Rüşvet Şansı
+        if(current.bribe && Math.random() > 0.5) {
+            document.getElementById('bribe-offer').style.display = "block";
+            document.getElementById('bribe-btn').style.display = "inline-block";
         } else {
-            score -= 20;
-            alert("Yanlış Karar! Adalet zedelendi.");
+            document.getElementById('bribe-offer').style.display = "none";
+            document.getElementById('bribe-btn').style.display = "none";
         }
 
-        totalYears += years;
-        document.getElementById('score').innerText = score;
-        document.getElementById('totalYears').innerText = totalYears;
-
-        // Efektler
-        document.getElementById('folder').style.transform = "translateY(500px) rotate(20deg)";
-        document.getElementById('folder').style.opacity = "0";
-
-        setTimeout(() => {
-            document.body.classList.remove('hit');
-            document.getElementById('yearSlider').value = 0;
-            updateSlider(0);
-            loadCase();
-        }, 800);
+        // Reset UI
+        document.getElementById('case-folder').style.transform = "rotate(0deg)";
+        document.getElementById('stamp-box').style.opacity = "0";
+        document.getElementById('reaction-bubble').style.opacity = "0";
     }
 
-    window.onload = loadCase;
+    document.getElementById('sentence-slider').oninput = function() {
+        document.getElementById('years-display').innerText = this.value;
+    }
+
+    function finalize(isLife) {
+        let years = isLife ? 100 : parseInt(document.getElementById('sentence-slider').value);
+        let stamp = document.getElementById('stamp-box');
+        
+        // Karar Damgası
+        if(years == 0) { stamp.innerText = "BERAAT"; stamp.style.color = "green"; }
+        else { stamp.innerText = "MAHKUM"; stamp.style.color = "red"; }
+        stamp.style.opacity = "1";
+
+        // Adalet Kontrolü
+        if((current.guilty && years > 0) || (!current.guilty && years == 0)) {
+            stats.rep += 5;
+            document.getElementById('ticker').innerText = "FLAŞ: Hakim " + current.name + " davasında adaleti sağladı!";
+            document.getElementById('defendant-emoji').innerText = years > 0 ? "😭" : "😇";
+        } else {
+            stats.rep -= 15;
+            document.getElementById('ticker').innerText = "TARTIŞMA: Hakim " + current.name + " davasında tartışmalı karar verdi!";
+            document.getElementById('defendant-emoji').innerText = "😡";
+        }
+
+        updateStats();
+        
+        setTimeout(() => {
+            document.getElementById('case-folder').style.transform = "translateX(1000px) rotate(45deg)";
+            setTimeout(loadNewCase, 1000);
+        }, 1500);
+    }
+
+    function takeBribe() {
+        stats.money += 50000;
+        stats.rep -= 30;
+        document.getElementById('ticker').innerText = "FISILTI: Adliyede rüşvet dedikoduları dolaşıyor...";
+        updateStats();
+        finalize(false); // Rüşvet alınca genelde beraat verilir :)
+    }
+
+    function updateStats() {
+        document.getElementById('reputation').innerText = stats.rep;
+        document.getElementById('money').innerText = stats.money;
+        if(stats.rep > 80) document.getElementById('rank').innerText = "Yargıtay Üyesi";
+        else if(stats.rep < 20) document.getElementById('rank').innerText = "Sürgün Hakim";
+    }
+
+    loadNewCase();
 </script>
 
 </body>
